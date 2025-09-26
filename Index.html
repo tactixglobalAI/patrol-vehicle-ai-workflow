@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patrol Vehicle AI Workflow - Mobile Optimized</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            font-family: 'Segoe UI', 'Roboto', 'Inter', 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 500px;
+            height: 100vh;
+            max-height: 900px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #00FFFF;
+            width: 100%;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #00FFFF;
+            text-shadow: 0 0 10px #00FFFF;
+            margin-bottom: 3px;
+            letter-spacing: 0.8px;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #FFFFFF;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .progress-container {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00FFFF, #FFFFFF, #00FFFF);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px #00FFFF;
+        }
+
+        .stage-indicator {
+            font-size: 10px;
+            color: #FFFFFF;
+            opacity: 0.9;
+            text-align: center;
+            margin-top: 6px;
+            font-weight: 500;
+            line-height: 1.3;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .pipeline-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            padding-top: 5px;
+        }
+
+        .pipeline-container > * {
+            flex-shrink: 0;
+            width: 300px;
+        }
+
+        .data-flow-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .data-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #00FFFF;
+            border-radius: 50%;
+            opacity: 0;
+            animation: dataFlow 3s linear infinite;
+            box-shadow: 0 0 5px #00FFFF;
+        }
+
+        @keyframes dataFlow {
+            0% { opacity: 0; transform: translateY(0); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(500px); }
+        }
+
+        .pipeline-block {
+            width: 300px;
+            height: 55px;
+            border-radius: 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            margin: 4px 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.8s ease-out;
+            border: 2px solid;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .pipeline-block.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .pipeline-block::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, var(--glow-color), transparent, var(--glow-color));
+            z-index: -1;
+            opacity: 0.3;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        .block-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .block-text {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: var(--text-color);
+            text-shadow: 0 0 6px var(--glow-color);
+            line-height: 1.2;
+        }
+
+        .block-icon {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--glow-color);
+            filter: drop-shadow(0 0 5px var(--glow-color));
+        }
+
+        /* Unified Tron theme colors */
+        .nlp, .cv, .fusion, .edge, .mesh, .report {
+            --glow-color: #00FFFF;
+            --text-color: #00FFFF;
+            border-color: #00FFFF;
+        }
+
+        /* Icon accent colors remain unique */
+        .nlp .block-icon svg * { stroke: #FF00FF !important; fill: #FF00FF !important; }
+        .cv .block-icon svg * { stroke: #FFFF00 !important; fill: #FFFF00 !important; }
+        .fusion .block-icon svg * { stroke: #00FFFF !important; fill: #00FFFF !important; }
+        .edge .block-icon svg * { stroke: #0080FF !important; fill: #0080FF !important; }
+        .mesh .block-icon svg * { stroke: #00FF80 !important; fill: #00FF80 !important; }
+        .report .block-icon svg * { stroke: #FFC800 !important; fill: #FFC800 !important; }
+
+        /* Arrows */
+        .arrow {
+            width: 3px;
+            height: 12px;
+            background: linear-gradient(180deg, transparent, #00FFFF, transparent);
+            margin: 2px auto;
+            position: relative;
+            opacity: 0;
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: all 0.5s ease-out;
+        }
+
+        .arrow.visible {
+            opacity: 1;
+            transform: scaleY(1);
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 3px solid transparent;
+            border-right: 3px solid transparent;
+            border-top: 6px solid #00FFFF;
+            filter: drop-shadow(0 0 2px #00FFFF);
+        }
+
+        /* Final animation effects */
+        .final-glow {
+            animation: finalPulse 1s ease-in-out;
+        }
+
+        .arrow-pulse {
+            animation: arrowPulse 1s ease-in-out;
+        }
+
+        @keyframes finalPulse {
+            0%, 100% { filter: drop-shadow(0 0 10px var(--glow-color)); }
+            50% { filter: drop-shadow(0 0 25px var(--glow-color)); }
+        }
+
+        @keyframes arrowPulse {
+            0% { background: linear-gradient(180deg, transparent, #00FFFF, transparent); }
+            50% { background: linear-gradient(180deg, #00FFFF, #FFFFFF, #00FFFF); }
+            100% { background: linear-gradient(180deg, transparent, #00FFFF, transparent); }
+        }
+
+        .footer {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 9px;
+            color: #FFFFFF;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">PATROL VEHICLE AI WORKFLOW</div>
+            <div class="subtitle">Scan for Threats - Real-time Intelligence Processing</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div class="stage-indicator" id="stageIndicator">Driver Command Recognition</div>
+        </div>
+        
+        <div class="pipeline-container">
+            <div class="data-flow-lines" id="dataFlow"></div>
+
+            <!-- Driver Speaks Command Block -->
+            <div class="pipeline-block nlp" id="block1">
+                <div class="block-content">
+                    <div class="block-text">Driver Speaks: "Scan for Threats"</div>
+                    <div class="block-icon">
+                        <svg width="35" height="35" viewBox="0 0 35 35">
+                            <!-- Professional microphone -->
+                            <rect x="15" y="7" width="5" height="12" rx="2.5" fill="none" stroke="#FF00FF" stroke-width="1.2"/>
+                            <rect x="15" y="7" width="5" height="12" rx="2.5" fill="#FF00FF" opacity="0.3"/>
+                            <path d="M 11 16 C 11 19 14 22 17.5 22 C 21 22 24 19 24 16" stroke="#FF00FF" stroke-width="1.2" fill="none"/>
+                            <line x1="17.5" y1="22" x2="17.5" y2="26" stroke="#FF00FF" stroke-width="1.2"/>
+                            <line x1="14" y1="26" x2="21" y2="26" stroke="#FF00FF" stroke-width="1.5"/>
+                            <!-- Sound waves -->
+                            <path d="M 9 12 Q 10.5 14 9 16" stroke="#FF00FF" stroke-width="0.8" fill="none" opacity="0.6"/>
+                            <path d="M 26 12 Q 24.5 14 26 16" stroke="#FF00FF" stroke-width="0.8" fill="none" opacity="0.6"/>
+                            <path d="M 7 10 Q 9.5 14 7 18" stroke="#FF00FF" stroke-width="0.6" fill="none" opacity="0.4"/>
+                            <path d="M 28 10 Q 25.5 14 28 18" stroke="#FF00FF" stroke-width="0.6" fill="none" opacity="0.4"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow1"></div>
+
+            <!-- Cameras Start Scanning Block -->
+            <div class="pipeline-block cv" id="block2">
+                <div class="block-content">
+                    <div class="block-text">Cameras Start Scanning</div>
+                    <div class="block-icon">
+                        <svg width="35" height="35" viewBox="0 0 35 35">
+                            <!-- Professional camera/eye -->
+                            <circle cx="17.5" cy="17.5" r="8.5" fill="none" stroke="#FFFF00" stroke-width="1.2"/>
+                            <circle cx="17.5" cy="17.5" r="5" fill="none" stroke="#FFFF00" stroke-width="1.2"/>
+                            <circle cx="17.5" cy="17.5" r="2.5" fill="#FFFF00"/>
+                            <!-- Detection frame -->
+                            <rect x="7" y="7" width="21" height="21" rx="1.5" fill="none" stroke="#FFFF00" stroke-width="0.8" stroke-dasharray="2,1" opacity="0.7"/>
+                            <!-- Corner brackets -->
+                            <path d="M 7 7 L 7 10 M 7 7 L 10 7" stroke="#FFFF00" stroke-width="1.5" opacity="0.9"/>
+                            <path d="M 28 7 L 28 10 M 28 7 L 25 7" stroke="#FFFF00" stroke-width="1.5" opacity="0.9"/>
+                            <path d="M 7 28 L 7 25 M 7 28 L 10 28" stroke="#FFFF00" stroke-width="1.5" opacity="0.9"/>
+                            <path d="M 28 28 L 28 25 M 28 28 L 25 28" stroke="#FFFF00" stroke-width="1.5" opacity="0.9"/>
+                            <!-- Scan lines -->
+                            <line x1="7" y1="14" x2="28" y2="14" stroke="#FFFF00" stroke-width="0.4" opacity="0.5"/>
+                            <line x1="7" y1="17.5" x2="28" y2="17.5" stroke="#FFFF00" stroke-width="0.4" opacity="0.5"/>
+                            <line x1="7" y1="21" x2="28" y2="21" stroke="#FFFF00" stroke-width="0.4" opacity="0.5"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow2"></div>
+
+            <!-- Sensors Collect Data Together Block -->
+            <div class="pipeline-block fusion" id="block3">
+                <div class="block-content">
+                    <div class="block-text">Sensors Collect Data Together</div>
+                    <div class="block-icon">
+                        <svg width="35" height="35" viewBox="0 0 35 35">
+                            <!-- Central fusion node -->
+                            <circle cx="17.5" cy="17.5" r="3.5" fill="#00FFFF" stroke="#00FFFF" stroke-width="0.8"/>
+                            <!-- Sensor nodes -->
+                            <circle cx="8.5" cy="8.5" r="2" fill="none" stroke="#00FFFF" stroke-width="0.8"/>
+                            <circle cx="26.5" cy="8.5" r="2" fill="none" stroke="#00FFFF" stroke-width="0.8"/>
+                            <circle cx="26.5" cy="26.5" r="2" fill="none" stroke="#00FFFF" stroke-width="0.8"/>
+                            <circle cx="8.5" cy="26.5" r="2" fill="none" stroke="#00FFFF" stroke-width="0.8"/>
+                            <circle cx="17.5" cy="5" r="2" fill="none" stroke="#00FFFF" stroke-width="0.8"/>
+                            <!-- Connection lines -->
+                            <line x1="8.5" y1="8.5" x2="17.5" y2="17.5" stroke="#00FFFF" stroke-width="0.8" opacity="0.8"/>
+                            <line x1="26.5" y1="8.5" x2="17.5" y2="17.5" stroke="#00FFFF" stroke-width="0.8" opacity="0.8"/>
+                            <line x1="26.5" y1="26.5" x2="17.5" y2="17.5" stroke="#00FFFF" stroke-width="0.8" opacity="0.8"/>
+                            <line x1="8.5" y1="26.5" x2="17.5" y2="17.5" stroke="#00FFFF" stroke-width="0.8" opacity="0.8"/>
+                            <line x1="17.5" y1="5" x2="17.5" y2="17.5" stroke="#00FFFF" stroke-width="0.8" opacity="0.8"/>
+                            <!-- Labels -->
+                            <text x="6" y="7" fill="#00FFFF" font-size="2.5" opacity="0.8">CAM</text>
+                            <text x="24" y="7" fill="#00FFFF" font-size="2.5" opacity="0.8">MIC</text>
+                            <text x="24" y="30" fill="#00FFFF" font-size="2.5" opacity="0.8">GPS</text>
+                            <text x="6" y="30" fill="#00FFFF" font-size="2.5" opacity="0.8">RF</text>
+                            <text x="16" y="3.5" fill="#00FFFF" font-size="2.5" opacity="0.8">LOC</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow3"></div>
+
+            <!-- AI Identifies What's Happening Block -->
+            <div class="pipeline-block edge" id="block4">
+                <div class="block-content">
+                    <div class="block-text">AI Identifies What's Happening</div>
+                    <div class="block-icon">
+                        <svg width="35" height="35" viewBox="0 0 35 35">
+                            <!-- Professional CPU/processor -->
+                            <rect x="10.5" y="10.5" width="14" height="14" rx="1.5" fill="none" stroke="#0080FF" stroke-width="1.2"/>
+                            <rect x="10.5" y="10.5" width="14" height="14" rx="1.5" fill="#0080FF" opacity="0.1"/>
+                            <!-- Circuit pattern -->
+                            <rect x="13" y="13" width="2.5" height="2.5" fill="#0080FF"/>
+                            <rect x="19.5" y="13" width="2.5" height="2.5" fill="#0080FF"/>
+                            <rect x="13" y="19.5" width="2.5" height="2.5" fill="#0080FF"/>
+                            <rect x="19.5" y="19.5" width="2.5" height="2.5" fill="#0080FF"/>
+                            <circle cx="17.5" cy="17.5" r="1.5" fill="none" stroke="#0080FF" stroke-width="0.8"/>
+                            <!-- Processing waves -->
+                            <circle cx="17.5" cy="17.5" r="8.5" fill="none" stroke="#0080FF" stroke-width="0.4" opacity="0.4"/>
+                            <circle cx="17.5" cy="17.5" r="11" fill="none" stroke="#0080FF" stroke-width="0.3" opacity="0.3"/>
+                            <circle cx="17.5" cy="17.5" r="13.5" fill="none" stroke="#0080FF" stroke-width="0.2" opacity="0.2"/>
+                            <!-- Connection pins -->
+                            <rect x="7" y="15.5" width="3.5" height="0.8" fill="#0080FF"/>
+                            <rect x="24.5" y="15.5" width="3.5" height="0.8" fill="#0080FF"/>
+                            <rect x="7" y="18.5" width="3.5" height="0.8" fill="#0080FF"/>
+                            <rect x="24.5" y="18.5" width="3.5" height="0.8" fill="#0080FF"/>
+                            <rect x="15.5" y="7" width="0.8" height="3.5" fill="#0080FF"/>
+                            <rect x="18.5" y="7" width="0.8" height="3.5" fill="#0080FF"/>
+                            <rect x="15.5" y="24.5" width="0.8" height="3.5" fill="#0080FF"/>
+                            <rect x="18.5" y="24.5" width="0.8" height="3.5" fill="#0080FF"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow4"></div>
+
+            <!-- Vehicle Shares Alerts Block -->
+            <div class="pipeline-block mesh" id="block5">
+                <div class="block-content">
+                    <div class="block-text">Vehicle Shares Alerts</div>
+                    <div class="block-icon">
+                        <svg width="35" height="35" viewBox="0 0 35 35">
+                            <!-- Professional network topology -->
+                            <circle cx="17.5" cy="7" r="2.5" fill="#00FF80" stroke="#00FF80" stroke-width="0.8"/>
+                            <circle cx="7" cy="14" r="2.5" fill="#00FF80" stroke="#00FF80" stroke-width="0.8"/>
+                            <circle cx="28" cy="14" r="2.5" fill="#00FF80" stroke="#00FF80" stroke-width="0.8"/>
+                            <circle cx="12" cy="24.5" r="2.5" fill="#00FF80" stroke="#00FF80" stroke-width="0.8"/>
+                            <circle cx="23" cy="24.5" r="2.5" fill="#00FF80" stroke="#00FF80" stroke-width="0.8"/>
+                            <circle cx="17.5" cy="17.5" r="1.5" fill="#00FF80"/>
+                            <!-- Network connections -->
+                            <line x1="17.5" y1="7" x2="7" y2="14" stroke="#00FF80" stroke-width="1.2" opacity="0.8"/>
+                            <line x1="17.5" y1="7" x2="28" y2="14" stroke="#00FF80" stroke-width="1.2" opacity="0.8"/>
+                            <line x1="7" y1="14" x2="12" y2="24.5" stroke="#00FF80" stroke-width="1.2" opacity="0.8"/>
+                            <line x1="28" y1="14" x2="23" y2="24.5" stroke="#00FF80" stroke-width="1.2" opacity="0.8"/>
+                            <line x1="12" y1="24.5" x2="23" y2="24.5" stroke="#00FF80" stroke-width="1.2" opacity="0.8"/>
+                            <line x1="7" y1="14" x2="17.5" y2="17.5" stroke="#00FF80" stroke-width="0.8" opacity="0.6"/>
+                            <line x1="28" y1="14" x2="17.5" y2="17.5" stroke="#00FF80" stroke-width="0.8" opacity="0.6"/>
+                            <line x1="12" y1="24.5" x2="17.5" y2="17.5" stroke="#00FF80" stroke-width="0.8" opacity="0.6"/>
+                            <line x1="23" y1="24.5" x2="17.5" y2="17.5" stroke="#00FF80" stroke-width="0.8" opacity="0.6"/>
+                            <!-- Signal waves -->
+                            <circle cx="17.5" cy="17.5" r="7" fill="none" stroke="#00FF80" stroke-width="0.4" opacity="0.3" stroke-dasharray="1.5,1.5"/>
+                            <circle cx="17.5" cy="17.5" r="10.5" fill="none" stroke="#00FF80" stroke-width="0.3" opacity="0.2" stroke-dasharray="2,2"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow" id="arrow5"></div>
+
+            <!-- Report is Sent Back Block -->
+            <div class="pipeline-block report" id="block6">
+                <div class="block-content">
+                    <div class="block-text">Report is Sent Back</div>
+                    <div class="block-icon">
+                        <svg width="35" height="35" viewBox="0 0 35 35">
+                            <!-- Professional document with upload arrow -->
+                            <rect x="10.5" y="7" width="17.5" height="21" rx="1.5" fill="none" stroke="#FFC800" stroke-width="1.2"/>
+                            <rect x="10.5" y="7" width="17.5" height="21" rx="1.5" fill="#FFC800" opacity="0.1"/>
+                            <!-- Document header -->
+                            <rect x="13" y="10.5" width="7" height="1.5" fill="#FFC800"/>
+                            <rect x="13" y="14" width="10.5" height="0.8" fill="#FFC800" opacity="0.8"/>
+                            <rect x="13" y="16.5" width="8.5" height="0.8" fill="#FFC800" opacity="0.8"/>
+                            <rect x="13" y="19" width="12" height="0.8" fill="#FFC800" opacity="0.8"/>
+                            <rect x="13" y="21.5" width="7" height="0.8" fill="#FFC800" opacity="0.8"/>
+                            <rect x="13" y="24" width="9.5" height="0.8" fill="#FFC800" opacity="0.8"/>
+                            <!-- Upload arrow -->
+                            <path d="M 22.5 12 L 22.5 18" stroke="#FFC800" stroke-width="1.2"/>
+                            <path d="M 20.5 14 L 22.5 12 L 24.5 14" stroke="#FFC800" stroke-width="1.2" fill="none"/>
+                            <!-- Status indicator -->
+                            <circle cx="24.5" cy="10.5" r="1.5" fill="#FFC800" opacity="0.3"/>
+                            <path d="M 23.8 10.5 L 24.2 10.9 L 25.2 9.9" stroke="#FFC800" stroke-width="0.8" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            © 2025 AI Security Systems | Threat Detection Workflow
+        </div>
+    </div>
+
+    <script>
+        let animationRunning = false;
+        let autoRestartTimeout;
+        
+        const stageDescriptions = [
+            "NLP - Voice Command",
+            "CV - Visual Scan", 
+            "Fusion - Sensor Fusion",
+            "Edge AI - Edge Processing",
+            "Mesh - Mesh Link",
+            "GenAI Report - Report Generation"
+        ];
+
+        function updateProgress(stage, progress) {
+            const progressBar = document.getElementById('progressBar');
+            const stageIndicator = document.getElementById('stageIndicator');
+            
+            progressBar.style.width = progress + '%';
+            stageIndicator.textContent = stageDescriptions[stage];
+        }
+
+        function createDataParticle() {
+            const dataFlow = document.getElementById('dataFlow');
+            const particle = document.createElement('div');
+            particle.className = 'data-particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 2 + 's';
+            dataFlow.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 3000);
+        }
+
+        function startDataFlow() {
+            const interval = setInterval(createDataParticle, 300);
+            return interval;
+        }
+
+        function startAnimation() {
+            if (animationRunning) return;
+            animationRunning = true;
+
+            // Clear any existing auto-restart timeout
+            if (autoRestartTimeout) {
+                clearTimeout(autoRestartTimeout);
+            }
+
+            // Reset all elements
+            document.querySelectorAll('.pipeline-block').forEach(block => {
+                block.classList.remove('visible', 'final-glow');
+            });
+            document.querySelectorAll('.arrow').forEach(arrow => {
+                arrow.classList.remove('visible', 'arrow-pulse');
+            });
+
+            updateProgress(0, 0);
+
+            // Start data flow effect
+            const dataFlowInterval = startDataFlow();
+
+            // Enhanced animation sequence with progress tracking
+            setTimeout(() => {
+                document.getElementById('block1').classList.add('visible');
+                updateProgress(0, 15);
+            }, 0);
+            
+            setTimeout(() => {
+                document.getElementById('arrow1').classList.add('visible');
+                updateProgress(0, 25);
+            }, 1500);
+            
+            setTimeout(() => {
+                document.getElementById('block2').classList.add('visible');
+                updateProgress(1, 35);
+            }, 2000);
+            
+            setTimeout(() => {
+                document.getElementById('arrow2').classList.add('visible');
+                updateProgress(1, 45);
+            }, 3500);
+            
+            setTimeout(() => {
+                document.getElementById('block3').classList.add('visible');
+                updateProgress(2, 55);
+            }, 4000);
+            
+            setTimeout(() => {
+                document.getElementById('arrow3').classList.add('visible');
+                updateProgress(2, 65);
+            }, 5500);
+            
+            setTimeout(() => {
+                document.getElementById('block4').classList.add('visible');
+                updateProgress(3, 75);
+            }, 6000);
+            
+            setTimeout(() => {
+                document.getElementById('arrow4').classList.add('visible');
+                updateProgress(3, 82);
+            }, 7500);
+            
+            setTimeout(() => {
+                document.getElementById('block5').classList.add('visible');
+                updateProgress(4, 90);
+            }, 8000);
+            
+            setTimeout(() => {
+                document.getElementById('arrow5').classList.add('visible');
+                updateProgress(4, 95);
+            }, 9500);
+            
+            setTimeout(() => {
+                document.getElementById('block6').classList.add('visible');
+                updateProgress(5, 100);
+            }, 10000);
+
+            // Final effects (10-12s)
+            setTimeout(() => {
+                // All blocks glow together
+                document.querySelectorAll('.pipeline-block').forEach(block => {
+                    block.classList.add('final-glow');
+                });
+                // Arrows pulse from top to bottom
+                document.querySelectorAll('.arrow').forEach(arrow => {
+                    arrow.classList.add('arrow-pulse');
+                });
+                
+                updateProgress(5, 100);
+                
+                // Mark animation as complete after final effects
+                setTimeout(() => {
+                    animationRunning = false;
+                    clearInterval(dataFlowInterval);
+                    
+                    // Auto-restart after 5 second pause
+                    autoRestartTimeout = setTimeout(() => {
+                        startAnimation();
+                    }, 5000); // 5 second pause
+                }, 2000); // 2 seconds for final effects
+            }, 10000); // Start final effects at 10s
+        }
+
+        // Start animation on load
+        window.addEventListener('load', () => {
+            setTimeout(startAnimation, 500);
+        });
+    </script>
+</body>
+</html>
