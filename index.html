@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrol Vehicle AI Workflow-Mobile Optimized</title>
+    <title>Patrol Vehicle AI Workflow - Mobile Optimized</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,8 @@
         }
 
         body {
-            background: #000000;
+            background: radial-gradient(ellipse at center, #001122 0%, #000000 70%), 
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><circle cx="50" cy="50" r="1" fill="%23ffffff" opacity="0.3"/><circle cx="150" cy="80" r="0.5" fill="%23ffffff" opacity="0.4"/><circle cx="30" cy="120" r="1.5" fill="%23ffffff" opacity="0.2"/><circle cx="170" cy="40" r="0.8" fill="%23ffffff" opacity="0.5"/><circle cx="90" cy="160" r="1.2" fill="%23ffffff" opacity="0.3"/><circle cx="180" cy="130" r="0.6" fill="%23ffffff" opacity="0.4"/></svg>');
             font-family: 'Segoe UI', 'Roboto', 'Inter', 'Arial', sans-serif;
             display: flex;
             justify-content: center;
@@ -33,6 +34,11 @@
             justify-content: flex-start;
             padding: 10px;
             overflow: hidden;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.15);
         }
 
         .header {
@@ -104,11 +110,64 @@
             width: 100%;
             min-height: 0;
             padding-top: 5px;
+            position: relative;
         }
 
         .pipeline-container > * {
             flex-shrink: 0;
             width: 300px;
+        }
+
+        /* Central Spine */
+        .central-spine {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                rgba(0, 255, 255, 0.3) 10%, 
+                rgba(0, 255, 255, 0.6) 50%, 
+                rgba(0, 255, 255, 0.3) 90%, 
+                transparent 100%
+            );
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            z-index: 0;
+        }
+
+        .spine-pulse {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 1) 0%, transparent 70%);
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: spineFlow 3s linear infinite;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        @keyframes spineFlow {
+            0% { 
+                top: -10px; 
+                opacity: 0;
+                transform: translateX(-50%) scale(0.5);
+            }
+            10% { 
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+            90% { 
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+            100% { 
+                top: calc(100% + 10px); 
+                opacity: 0;
+                transform: translateX(-50%) scale(0.5);
+            }
         }
 
         .data-flow-lines {
@@ -153,8 +212,9 @@
             transform: translateY(10px);
             transition: all 0.8s ease-out;
             border: 2px solid;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
         }
 
         .pipeline-block.visible {
@@ -300,6 +360,7 @@
         </div>
         
         <div class="pipeline-container">
+            <div class="central-spine" id="centralSpine"></div>
             <div class="data-flow-lines" id="dataFlow"></div>
 
             <!-- Driver Speaks Command Block -->
@@ -422,10 +483,10 @@
 
             <div class="arrow" id="arrow4"></div>
 
-            <!-- Vehicle Shares Alerts Block -->
+            <!-- Publish Alerts to Mesh Block -->
             <div class="pipeline-block mesh" id="block5">
                 <div class="block-content">
-                    <div class="block-text">Vehicle Shares Alerts</div>
+                    <div class="block-text">Publish Alerts to Mesh (Optional)</div>
                     <div class="block-icon">
                         <svg width="35" height="35" viewBox="0 0 35 35">
                             <!-- Professional network topology -->
@@ -455,10 +516,10 @@
 
             <div class="arrow" id="arrow5"></div>
 
-            <!-- Report is Sent Back Block -->
+            <!-- GenAI Report Ready Block -->
             <div class="pipeline-block report" id="block6">
                 <div class="block-content">
-                    <div class="block-text">Report is Sent Back</div>
+                    <div class="block-text">GenAI Report Ready</div>
                     <div class="block-icon">
                         <svg width="35" height="35" viewBox="0 0 35 35">
                             <!-- Professional document with upload arrow -->
@@ -493,8 +554,8 @@
         let autoRestartTimeout;
         
         const stageDescriptions = [
-            "NLP - Voice Command",
-            "CV - Visual Scan", 
+            "Natural Language Processing - Voice Command",
+            "Computer Vision - Visual Scan", 
             "Fusion - Sensor Fusion",
             "Edge AI - Edge Processing",
             "Mesh - Mesh Link",
@@ -524,9 +585,24 @@
             }, 3000);
         }
 
+        function createSpinePulse() {
+            const spine = document.getElementById('centralSpine');
+            const pulse = document.createElement('div');
+            pulse.className = 'spine-pulse';
+            pulse.style.animationDelay = Math.random() * 1 + 's';
+            spine.appendChild(pulse);
+            
+            setTimeout(() => {
+                if (pulse.parentNode) {
+                    pulse.parentNode.removeChild(pulse);
+                }
+            }, 3000);
+        }
+
         function startDataFlow() {
-            const interval = setInterval(createDataParticle, 300);
-            return interval;
+            const particleInterval = setInterval(createDataParticle, 300);
+            const spineInterval = setInterval(createSpinePulse, 500);
+            return { particleInterval, spineInterval };
         }
 
         function startAnimation() {
@@ -549,7 +625,7 @@
             updateProgress(0, 0);
 
             // Start data flow effect
-            const dataFlowInterval = startDataFlow();
+            const dataFlowIntervals = startDataFlow();
 
             // Enhanced animation sequence with progress tracking
             setTimeout(() => {
@@ -623,7 +699,8 @@
                 // Mark animation as complete after final effects
                 setTimeout(() => {
                     animationRunning = false;
-                    clearInterval(dataFlowInterval);
+                    clearInterval(dataFlowIntervals.particleInterval);
+                    clearInterval(dataFlowIntervals.spineInterval);
                     
                     // Auto-restart after 5 second pause
                     autoRestartTimeout = setTimeout(() => {
